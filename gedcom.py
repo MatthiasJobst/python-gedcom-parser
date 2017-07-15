@@ -80,7 +80,7 @@ class Gedcom:
     def __parse_line(self,number,line):
         # each line should have: Level SP (Pointer SP)? Tag (SP Value)? (SP)? NL
         # parse the line
-        parts = string.split(line)
+        parts = str.split(line)
         place = 0
         l = self.__level(number,parts,place)
         place += 1
@@ -162,12 +162,12 @@ class Gedcom:
             while place < len(parts):
                 vlist.append(parts[place])
                 place += 1
-            v = string.join(vlist)
+            v = ' '.join(vlist)
             return v
             
     def __error(self,number,text):
         error = "Gedcom format error on line " + str(number) + ': ' + text
-        raise GedcomParseError, error
+        raise GedcomParseError(error)
 
     def __count(self):
         # Count number of individuals
@@ -179,7 +179,7 @@ class Gedcom:
 
     def __print(self):
         for e in self.element_list:
-            print string.join([str(e.level()),e.pointer(),e.tag(),e.value()])
+            print (str.join([str(e.level()),e.pointer(),e.tag(),e.value()]))
 
 
 class GedcomParseError(Exception):
@@ -189,7 +189,7 @@ class GedcomParseError(Exception):
         self.value = value
         
     def __str__(self):
-        return `self.value`
+        return self.value
 
 class Element:
     """Gedcom element
@@ -435,9 +435,9 @@ class Element:
                 # some older Gedcom files don't use child tags but instead
                 # place the name in the value of the NAME tag
                 if e.value() != "":
-                    name = string.split(e.value(),'/')
-                    first = string.strip(name[0])
-                    last = string.strip(name[1])
+                    name = str.split(e.value(),'/')
+                    first = str.strip(name[0])
+                    last = str.strip(name[1])
                 else:
                     for c in e.children():
                         if c.tag() == "GIVN":
@@ -470,7 +470,7 @@ class Element:
             if e.tag() == "BIRT":
                 for c in e.children():
                     if c.tag() == "DATE":
-                        datel = string.split(c.value())
+                        datel = str.split(c.value())
                         date = datel[len(datel)-1]
         if date == "":
             return -1
@@ -503,7 +503,7 @@ class Element:
             if e.tag() == "DEAT":
                 for c in e.children():
                     if c.tag() == "DATE":
-                        datel = string.split(c.value())
+                        datel = str.split(c.value())
                         date = datel[len(datel)-1]
         if date == "":
             return -1
@@ -561,7 +561,7 @@ class Element:
                     if g.tag() == "MARR":
                         for h in g.children():
                             if h.tag() == "DATE":
-                                datel = string.split(h.value())
+                                datel = str.split(h.value())
                                 date = datel[len(datel)-1]
                                 try:
                                     dates.append(int(date))

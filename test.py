@@ -92,17 +92,17 @@ class Test:
     def print_header(self,header):
         """Print a header."""
         print
-        print "="*70        
-        print header
-        print "="*70
+        print ("="*70)
+        print (header)
+        print ("="*70)
 
     def print_record(self,e):
         """Print an element."""
         if self.info == 'names':
             (first,last) = e.name()
-            print first, last
+            print (first, last)
         elif self.info == 'gedcom':
-            print e.get_individual()
+            print (e.get_individual())
         
 
     def surname(self,match):
@@ -208,7 +208,7 @@ class Test:
             if e.value().startswith('@'):
                 f = self.g.element_dict().get(e.value(),None)
                 if f == None:
-                    print e.value()
+                    print (e.value())
 
 if __name__ == "__main__":
     t = Test()
