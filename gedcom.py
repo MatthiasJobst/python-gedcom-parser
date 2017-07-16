@@ -24,7 +24,7 @@
 __all__ = ["Gedcom", "Element", "GedcomParseError"]
 
 # Global imports
-import string
+from date import splitDate
 
 class Gedcom:
     """Gedcom parser
@@ -37,7 +37,7 @@ class Gedcom:
 
     """
 
-    def __init__(self,file):
+    def __init__(self,lines):
         """Initialize a Gedcom parser. You must supply a Gedcom file."""
         self.__element_list = []
         self.__element_dict = {}
@@ -45,7 +45,7 @@ class Gedcom:
         self.__current_level = -1
         self.__current_element = self.__element_top
         self.__individuals = 0
-        self.__parse(file)
+        self.__parse(lines)
 
     def element_list(self):
         """Return a list of all the elements in the Gedcom file.  The
@@ -64,12 +64,10 @@ class Gedcom:
 
     # Private methods
 
-    def __parse(self,file):
-        # open file
+    def __parse(self,lines):
         # go through the lines
-        f = open(file)
         number = 1
-        for line in f.readlines():
+        for line in lines:
             # Skip over some junk that Rootsmagic puts in gedcom files.
             if number == 1 and ord(line[0]) == 239:
                 line = line[3:]
@@ -173,7 +171,8 @@ class Gedcom:
         # Count number of individuals
         self.__individuals = 0
         for e in self.__element_list:
-            if e.individual():
+            q = Query(e)
+            if q.individual():
                 self.__individuals += 1
 
 
@@ -250,6 +249,10 @@ class Element:
         """Return the value of this element."""
         return self.__value
 
+    def dict(self):
+        """Return the dictionary of this element."""
+        return self.__dict
+    
     def children(self):
         """Return the child elements of this element."""
         return self.__children
@@ -266,9 +269,15 @@ class Element:
         """Add a parent element to this element."""
         self.__parent = element
 
+class Query(object):
+    """Query GEDCOM Element tree"""
+    
+    def __init__(self,element):
+        self.element = element
+    
     def individual(self):
         """Check if this element is an individual."""
-        return self.tag() == "INDI"
+        return self.element.tag() == "INDI"
 
     # criteria matching
 
@@ -417,9 +426,9 @@ class Element:
     def families(self):
         """Return a list of all of the family elements of a person."""
         results = []
-        for e in self.children():
+        for e in self.element.children():
             if e.tag() == "FAMS":
-                f = self.__dict.get(e.value(),None)
+                f = e.dict().get(e.value(),None)
                 if f != None:
                     results.append(f)
         return results
@@ -430,7 +439,7 @@ class Element:
         last = ""
         if not self.individual():
             return (first,last)
-        for e in self.children():
+        for e in self.element.children():
             if e.tag() == "NAME":
                 # some older Gedcom files don't use child tags but instead
                 # place the name in the value of the NAME tag
@@ -466,12 +475,11 @@ class Element:
         date = ""
         if not self.individual():
             return date
-        for e in self.children():
+        for e in self.element.children():
             if e.tag() == "BIRT":
                 for c in e.children():
                     if c.tag() == "DATE":
-                        datel = str.split(c.value())
-                        date = datel[len(datel)-1]
+                        date = splitDate(c.value())
         if date == "":
             return -1
         try:
@@ -499,12 +507,11 @@ class Element:
         date = ""
         if not self.individual():
             return date
-        for e in self.children():
+        for e in self.element.children():
             if e.tag() == "DEAT":
                 for c in e.children():
                     if c.tag() == "DATE":
-                        datel = str.split(c.value())
-                        date = datel[len(datel)-1]
+                        date = splitDate(c.value())
         if date == "":
             return -1
         try:
@@ -532,7 +539,7 @@ class Element:
             return (date,place)
         for e in self.children():
             if e.tag() == "FAMS":
-                f = self.__dict.get(e.value(),None)
+                f = e.dict().get(e.value(),None)
                 if f == None:
                     return (date,place)
                 for g in f.children():
@@ -552,17 +559,16 @@ class Element:
         dates = []
         if not self.individual():
             return dates
-        for e in self.children():
+        for e in self.element.children():
             if e.tag() == "FAMS":
-                f = self.__dict.get(e.value(),None)
+                f = e.dict().get(e.value(),None)
                 if f == None:
                     return dates
                 for g in f.children():
                     if g.tag() == "MARR":
                         for h in g.children():
                             if h.tag() == "DATE":
-                                datel = str.split(h.value())
-                                date = datel[len(datel)-1]
+                                date = splitDate(h.value())
                                 try:
                                     dates.append(int(date))
                                 except:
@@ -578,10 +584,10 @@ class Element:
 
     def get_family(self):
         """Return this element any all elements in its families."""
-        result = [self]
-        for e in self.children():
+        result = [self.element]
+        for e in self.element.children():
             if e.tag() == "HUSB" or e.tag() == "WIFE" or e.tag() == "CHIL":
-                f = self.__dict.get(e.value())
+                f = e.dict().get(e.value())
                 if f != None:
                     result.append(f)
         return result

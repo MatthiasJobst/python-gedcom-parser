@@ -19,9 +19,15 @@
 
 # Global imports
 import optparse
+import codecs
 
 # Local imports
 import gedcom
+
+# Local functions
+def getLinesFromFile(file, encoding):
+    f = codecs.open(file,encoding=encoding)
+    return f.readlines()
 
 class Test:
     """Test driver for the Gedcom parser."""
@@ -30,7 +36,7 @@ class Test:
         """ Initialize test class."""
         self.parse_options()
         self.filename = self.options.filename
-        self.g = gedcom.Gedcom(self.filename)
+        self.g = gedcom.Gedcom(getLinesFromFile(self.filename, encoding='utf-8'))
         self.info = 'names'
 
     def parse_options(self):
@@ -45,11 +51,11 @@ class Test:
         (self.options,self.args) = parser.parse_args()
 
     def run(self,info='names',surname='A',given='Maria',
-            birth=1857,birth_start=1850,birth_end=1860,
-            death=1857,death_start=1850,death_end=1860,
-            marriage=1857,marriage_start=1850,marriage_end=1860,
-            family_surname='Nicotra',family_given='Maria',
-            criteria='surname=N:birthrange=1820-1840:deathrange=1900-1910'):
+            birth=1968,birth_start=1940,birth_end=1960,
+            death=1922,death_start=1900,death_end=1950,
+            marriage=1805,marriage_start=1850,marriage_end=1900,
+            family_surname='Steuer',family_given='Maria',
+            criteria='surname=J:birthrange=1800-1910:deathrange=1900-2010'):
         """Run a standard series of tests.
         
         Keyword arguments:
@@ -99,8 +105,12 @@ class Test:
     def print_record(self,e):
         """Print an element."""
         if self.info == 'names':
-            (first,last) = e.name()
-            print (first, last)
+            q = gedcom.Query(e)
+            (first,last) = q.name()
+            try:
+                print (first, last)
+            except UnicodeEncodeError:
+                pass
         elif self.info == 'gedcom':
             print (e.get_individual())
         
@@ -109,64 +119,72 @@ class Test:
         """Show matching records for a surname substring."""
         self.print_header('Surname - %s' % (match))
         for e in self.g.element_list():
-            if e.individual():
-                if e.surname_match(match):
+            q = gedcom.Query(e)
+            if q.individual():
+                if q.surname_match(match):
                     self.print_record(e)
 
     def given(self,match):
         """Show matching records for a given name substring."""
         self.print_header('Given - %s' % (match))
         for e in self.g.element_list():
-            if e.individual():
-                if e.given_match(match):
+            q = gedcom.Query(e)
+            if q.individual():
+                if q.given_match(match):
                     self.print_record(e)
 
     def birth(self,year):
         """Show matching records for a birth year."""
         self.print_header('Born %d' % (year))
         for e in self.g.element_list():
-            if e.individual():
-                if e.birth_year_match(year):
+            q = gedcom.Query(e)
+            if q.individual():
+                if q.birth_year_match(year):
                     self.print_record(e)
 
     def birth_range(self,year1,year2):
         """Show matching records for a birth year range."""
         self.print_header('Born %d - %d' % (year1,year2))
         for e in self.g.element_list():
-            if e.individual():
-                if e.birth_range_match(year1,year2):
+            q = gedcom.Query(e)
+            if q.individual():
+                if q.birth_range_match(year1,year2):
                     self.print_record(e)
 
     def death(self,year):
         """Show matching records for a death year."""
         self.print_header('Died %d' %(year))
         for e in self.g.element_list():
-            if e.individual():
-                if e.death_year_match(year):
+            q = gedcom.Query(e)
+            if q.individual():
+                if q.death_year_match(year):
                     self.print_record(e)
 
     def death_range(self,year1,year2):
         """Show matching records for a death year range."""
         self.print_header('Died %d - %d' % (year1,year2))
         for e in self.g.element_list():
-            if e.individual():
-                if e.death_range_match(year1,year2):
+            q = gedcom.Query(e)
+            if q.individual():
+                if q.death_range_match(year1,year2):
                     self.print_record(e)
 
     def marriage(self,year):
         """Show matching records for a marriage year."""
         self.print_header('Married %d' % (year))
         for e in self.g.element_list():
-            if e.individual():
-                if e.marriage_year_match(year):
+            q = gedcom.Query(e)
+            if q.individual():
+                if q.marriage_year_match(year):
                     self.print_record(e)
 
     def marriage_range(self,year1,year2):
         """Show matching records for a marriage year range."""
         self.print_header('Married %d - %d' % (year1,year2))
         for e in self.g.element_list():
-            if e.individual():
-                if e.marriage_range_match(year1,year2):
+            q = gedcom.Query(e)
+            if q.individual():
+                if q.marriage_range_match(year1,year2):
                     self.print_record(e)
 
     def family_of(self,surname,given):
@@ -176,10 +194,11 @@ class Test:
         """
         self.print_header('Family of %s %s' % (given,surname))
         for e in self.g.element_list():
-            if e.individual():
-                if e.surname_match(surname) and e.given_match(given):
-                    for f in e.families():
-                        for e in f.get_family():
+            q = gedcom.Query(e)
+            if q.individual():
+                if q.surname_match(surname) and q.given_match(given):
+                    for f in q.families():
+                        for e in gedcom.Query(f).get_family():
                             self.print_record(e)
 
     def criteria_match(self,criteria):
@@ -194,8 +213,9 @@ class Test:
         """
         self.print_header('Criteria Matching: %s' % (criteria))
         for e in self.g.element_list():
-            if e.individual():
-                if e.criteria_match(criteria):
+            q = gedcom.Query(e)
+            if q.individual():
+                if q.criteria_match(criteria):
                     self.print_record(e)
 
     def missing(self):
